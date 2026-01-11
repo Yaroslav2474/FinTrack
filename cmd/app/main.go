@@ -31,7 +31,7 @@ func AddTrannsaction() error {
 		return fmt.Errorf("описание не может быть пустым\n")
 	}
 
-	fmt.Println(amount, "\n", description, "\n", category, "\n")
+	fmt.Printf("сумма равна: %d\nописание: %s\nкатегория: %s\n", amount, description, category)
 
 	return nil
 
@@ -55,12 +55,15 @@ func main() {
 			if err != nil {
 				fmt.Print(err)
 			}
-
+			choise = 3
 		} else if choise == 2 {
 			models.GetDefaultCategories()
+			choise = 3
 		} else if choise == 0 {
 			fmt.Println("До свидания!")
 			break
+		} else if choise == 3 {
+			fmt.Println("--------------------------------------------------------------------")
 		} else {
 			fmt.Println("Только 3 действия в меню.")
 		}
