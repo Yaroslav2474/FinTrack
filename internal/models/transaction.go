@@ -114,37 +114,3 @@ func ParseTransactionType(s string) (TransactionType, error) {
 		return TransactionType(""), fmt.Errorf("такого типа не существует")
 	}
 }
-
-func AddTrannsaction() {
-	var choise int
-
-	fmt.Print("----------------------Меню----------------------")
-	fmt.Print("1. Добавить транзакцию\n2. Показать транзакции\n0. Выход")
-
-	fmt.Scan(&choise)
-
-	for {
-		if choise == 1 {
-
-			fmt.Println("Выберете вид транзакции: \n1.Доходы\n2.Расходы")
-			fmt.Scan(&choise)
-
-			switch choise {
-			case 1:
-
-			case 2:
-
-			default:
-				fmt.Print("Только два вида транзакций.")
-			}
-
-		} else if choise == 2 {
-			GetDefaultCategories()
-		} else if choise == 0 {
-			fmt.Println("До свидания!")
-			break
-		} else {
-			fmt.Println("Только 3 действия в меню.")
-		}
-	}
-}

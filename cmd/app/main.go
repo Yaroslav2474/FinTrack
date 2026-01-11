@@ -1,7 +1,68 @@
 package main
 
-import "fintrack/internal/models"
+import (
+	"fintrack/internal/models"
+	"fmt"
+)
+
+func AddTrannsaction() error {
+
+	var amount int
+	var category, description string
+
+	fmt.Println("Введите сумму: ")
+	fmt.Scan(&amount)
+	fmt.Println("Введите категорию: ")
+	fmt.Scan(&category)
+	fmt.Println("Введите описание: ")
+	fmt.Scan(&description)
+
+	if amount <= 0 {
+		return fmt.Errorf("сумма не может быть меньше нуля\n")
+	}
+
+	if category == "" {
+		return fmt.Errorf("категория не может быть пустой\n")
+	} else if category != "income" && category != "expense" {
+		return fmt.Errorf("невернро введена категория\n")
+	}
+
+	if description == "" {
+		return fmt.Errorf("описание не может быть пустым\n")
+	}
+
+	fmt.Println(amount, "\n", description, "\n", category, "\n")
+
+	return nil
+
+}
 
 func main() {
-	models.AddTrannsaction()
+	var choise int
+	// var service *services.TransactionService
+
+	for {
+
+		fmt.Println("----------------------Меню----------------------")
+		fmt.Println("1. Добавить транзакцию\n2. Показать транзакции\n0. Выход")
+
+		fmt.Scan(&choise)
+
+		if choise == 1 {
+
+			err := AddTrannsaction()
+
+			if err != nil {
+				fmt.Print(err)
+			}
+
+		} else if choise == 2 {
+			models.GetDefaultCategories()
+		} else if choise == 0 {
+			fmt.Println("До свидания!")
+			break
+		} else {
+			fmt.Println("Только 3 действия в меню.")
+		}
+	}
 }
