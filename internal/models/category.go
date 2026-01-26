@@ -7,64 +7,63 @@ import (
 	"strings"
 )
 
-type сategoryType string
+type CategoryType string
 
 const (
-	Income   сategoryType = "income"
-	Expense  сategoryType = "expense"
-	filename              = "./data/categories.json"
+	Income   CategoryType = "income"
+	Expense  CategoryType = "expense"
+	Filename              = "./data/categories.json"
 )
 
 type Category struct {
-	ID          string
-	Title       string
-	Type        сategoryType
-	Edit        bool
-	Description string
-	// Budget float64
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	Type     string `json:"type"`
+	IsIncome bool   `json:"is_income"`
+	Edit     bool   `json:"edit"`
 }
 
 var (
-	defaultExpenseCategories = []Category{
-		{ID: "sys_exp_food", Title: "★Продукты", Type: Expense, Edit: true},
-		{ID: "sys_exp_transport", Title: "★Транспорт", Type: Expense, Edit: true},
-		{ID: "sys_exp_housing", Title: "★Жилье", Type: Expense, Edit: true},
-		{ID: "sys_exp_entertainment", Title: "★Развлечения", Type: Expense, Edit: true},
+	DefaultExpenseCategories = []Category{
+		{ID: "1", Name: "★Продукты", IsIncome: false, Type: "expense"},
+		{ID: "2", Name: "★Транспорт", IsIncome: false, Type: "expense"},
+		{ID: "3", Name: "★Жилье", IsIncome: false, Type: "expense"},
+		{ID: "4", Name: "★Развлечения", IsIncome: false, Type: "expense"},
 	}
 
-	defaultIncomeCategories = []Category{
-		{ID: "sys_inc_salary", Title: "★Зарплата", Type: Income, Edit: true},
-		{ID: "sys_inc_gifts", Title: "★Подарки", Type: Income, Edit: true},
-		{ID: "sys_inc_other", Title: "★Прочие доходы", Type: Income, Edit: true},
+	DefaultIncomeCategories = []Category{
+		{ID: "5", Name: "★Зарплата", IsIncome: true, Type: "income"},
+		{ID: "6", Name: "★Подарки", IsIncome: true, Type: "income"},
+		{ID: "7", Name: "★Прочие доходы", IsIncome: true, Type: "income"},
 	}
 
-	allCategories []Category
+	AllCategories []Category
 )
 
 func loadFromFile() {
-	file, err := os.Open(filename)
+	file, err := os.Open(Filename)
 	if err != nil {
 		return
 	}
 	defer file.Close()
 
 	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&defaultExpenseCategories)
+	err = decoder.Decode(&DefaultExpenseCategories)
 	if err != nil {
 		fmt.Println("Ошибка загрузки данных, начнём заново.")
-		defaultExpenseCategories = []Category{}
+		DefaultExpenseCategories = []Category{}
 	}
 
 	decoder = json.NewDecoder(file)
-	err = decoder.Decode(&defaultIncomeCategories)
+	err = decoder.Decode(&DefaultIncomeCategories)
 	if err != nil {
 		fmt.Println("Ошибка загрузки данных, начнём заново.")
-		defaultIncomeCategories = []Category{}
+		DefaultIncomeCategories = []Category{}
 	}
 }
 
 func saveToFile() {
-	file, err := os.Create(filename)
+	file, err := os.Create(Filename)
 	if err != nil {
 		fmt.Println("Не могу сохранить файл.")
 		return
@@ -72,13 +71,13 @@ func saveToFile() {
 	defer file.Close()
 
 	encoder := json.NewEncoder(file)
-	err = encoder.Encode(defaultExpenseCategories)
+	err = encoder.Encode(DefaultExpenseCategories)
 	if err != nil {
 		fmt.Println("Ошибка при сохранении.")
 	}
 
 	encoder = json.NewEncoder(file)
-	err = encoder.Encode(defaultIncomeCategories)
+	err = encoder.Encode(DefaultIncomeCategories)
 	if err != nil {
 		fmt.Println("Ошибка при сохранении.")
 	}
@@ -93,11 +92,11 @@ func GetDefaultCategories() ([]Category, error) {
 	}
 
 	if fileInfo == nil {
-		for _, v := range defaultExpenseCategories {
-			fmt.Printf("ID: %s Название: %s  Тип транзакции: %s  Подлежит редактированию: %v", v.ID, v.Title, v.Type, v.Edit)
+		for _, v := range DefaultExpenseCategories {
+			fmt.Printf("ID: %s Название: %s  Тип транзакции: %s  Подлежит редактированию: %v\n", v.ID, v.Name, v.IsIncome, v.Edit)
 		}
-		for _, v := range defaultIncomeCategories {
-			fmt.Printf("ID: %s Название: %s  Тип транзакции: %s  Подлежит редактированию: %v", v.ID, v.Title, v.Type, v.Edit)
+		for _, v := range DefaultIncomeCategories {
+			fmt.Printf("ID: %s Название: %s  Тип транзакции: %s  Подлежит редактированию: %v\n", v.ID, v.Name, v.IsIncome, v.Edit)
 		}
 
 	}
@@ -109,7 +108,7 @@ func GetDefaultCategories() ([]Category, error) {
 	}
 
 	for _, v := range inf {
-		fmt.Printf("ID: %s Название: %s  Тип транзакции: %s  Подлежит редактированию: %v", v.ID, v.Title, v.Type, v.Edit)
+		fmt.Printf("ID: %s Название: %s  Тип транзакции: %s  Подлежит редактированию: %v\n", v.ID, v.Name, v.IsIncome, v.Edit)
 	}
 
 	return inf, nil
@@ -123,6 +122,12 @@ func FindCategoryByID(id string) (*Category, error) {
 		return nil, err
 	}
 
+	var intID int
+	_, err = fmt.Sscanf(id, "%d", &intID)
+	if err != nil {
+		return nil, fmt.Errorf("неверный формат ID: %v", err)
+	}
+
 	for _, category := range defaultCategories {
 		if category.ID == id {
 			return &category, nil
@@ -134,13 +139,28 @@ func FindCategoryByID(id string) (*Category, error) {
 }
 
 func IsEditCategory(id string) (bool, string) {
+	var intID int
+	_, err := fmt.Sscanf(id, "%d", &intID)
+	if err != nil {
+		return false, "Некорректный формат ID"
+	}
 
-	for _, cat := range allCategories {
+	for _, cat := range AllCategories {
 		if cat.ID == id {
 			return cat.Edit, "Системная категория"
 		}
 	}
 	return false, "Не системная категория"
+
+}
+
+func GetCategoriesByType(typ bool) string {
+
+	if typ {
+		return string(Income)
+	} else {
+		return string(Expense)
+	}
 
 }
 
@@ -166,13 +186,13 @@ func GetCategoryTypeByName(name string) (string, bool) {
 }
 
 func ValidateCategory(category *Category) error {
-	category.Title = strings.TrimSpace(category.Title)
+	category.Name = strings.TrimSpace(category.Name)
 
-	if len(category.Title) == 0 {
+	if len(category.Name) == 0 {
 		return fmt.Errorf("название не должно быть пустым")
 	}
 
-	if category.Type != Expense || category.Type != Income {
+	if CategoryType(category.Type) != Expense && CategoryType(category.Type) != Income {
 		return fmt.Errorf("некорректный тип категории: должен быть Income или Expense")
 	}
 
@@ -184,7 +204,7 @@ func ValidateCategory(category *Category) error {
 }
 
 func CategoryExists(categories *Category, name string) bool {
-	trimCat := strings.ToLower(strings.TrimSpace(categories.Title))
+	trimCat := strings.ToLower(strings.TrimSpace(categories.Name))
 	trimName := strings.ToLower(strings.TrimSpace(name))
 
 	for _, catName := range trimCat {

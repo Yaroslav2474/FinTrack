@@ -3,7 +3,8 @@ package storage
 import "fintrack/internal/models"
 
 type Storage interface {
-	SaveTransactions(models.Transaction) error
-	LoadTransactions() ([]models.Transaction, error)
+	SaveTransaction(transaction models.Transaction) error
+	GetAllTransactions() ([]models.Transaction, error)
 	GetCategories() ([]models.Category, error)
+	SaveCategory(category models.Category) error
 }

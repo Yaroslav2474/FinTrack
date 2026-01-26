@@ -3,89 +3,91 @@ package storage
 import (
 	"encoding/json"
 	"fintrack/internal/models"
-	"fmt"
 	"os"
-	"path/filepath"
 	"sync"
 )
 
 type FileStorage struct {
-	dataDir     string
-	mutex       sync.Mutex
-	filePerms   os.FileMode
-	dirPerms    os.FileMode
-	autoCreater bool
-	encoder     *json.Encoder
+	transactionFile string
+	categoryFile    string
+	mu              sync.RWMutex
 }
 
-func NewFileStorage(dataDir string) (*FileStorage, error) {
-
-	return &FileStorage{dataDir: dataDir}, nil
+func NewFileStorage(transactionFile, categoryFile string) *FileStorage {
+	return &FileStorage{
+		transactionFile: transactionFile,
+		categoryFile:    categoryFile,
+	}
 }
 
-func (fs FileStorage) SaveTransactions(transactions []models.Transaction) error {
+func (fs *FileStorage) SaveTransaction(transaction models.Transaction) error {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
 
-	jsonData, err := json.MarshalIndent(transactions, "", " ")
+	transactions, _ := fs.readTransactions()
+	transactions = append(transactions, transaction)
+	return fs.writeTransactions(transactions)
+}
 
+func (fs *FileStorage) GetAllTransactions() ([]models.Transaction, error) {
+	fs.mu.RLock()
+	defer fs.mu.RUnlock()
+	return fs.readTransactions()
+}
+
+func (fs *FileStorage) GetCategories() ([]models.Category, error) {
+	fs.mu.RLock()
+	defer fs.mu.RUnlock()
+	return fs.readCategories()
+}
+
+func (fs *FileStorage) SaveCategory(category models.Category) error {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	categories, _ := fs.readCategories()
+	categories = append(categories, category)
+	return fs.writeCategories(categories)
+}
+
+func (fs *FileStorage) readTransactions() ([]models.Transaction, error) {
+	data, err := os.ReadFile(fs.transactionFile)
 	if err != nil {
-		return fmt.Errorf("не удалось преобразовать транзакции в JSON: %w", err)
-	}
-
-	filePath := filepath.Join(fs.dataDir, "transaction.json")
-
-	if err = os.MkdirAll(fs.dataDir, 0755); err != nil {
-		return fmt.Errorf("не удалось создать директорию %s: %w", fs.dataDir, err)
-	}
-
-	if err = os.WriteFile(filePath, jsonData, 0644); err != nil {
-		return fmt.Errorf("не удалось записать файл %s: %w", filePath, err)
-	}
-
-	return nil
-
-}
-
-func (fs FileStorage) LoadTransactions() ([]models.Transaction, error) {
-
-	var transaction []models.Transaction
-
-	filePath := filepath.Join(fs.dataDir, "transaction.json")
-
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		return []models.Transaction{}, nil
 	}
 
-	filesize, err := os.ReadFile(filePath)
-
-	if err != nil {
-		return []models.Transaction{}, fmt.Errorf("не удалось прочитать файл по пути %s: %w", filePath, err)
+	var transactions []models.Transaction
+	if err := json.Unmarshal(data, &transactions); err != nil {
+		return []models.Transaction{}, nil
 	}
-
-	err = json.Unmarshal(filesize, &transaction)
-
-	if err != nil {
-		return []models.Transaction{}, fmt.Errorf("не удалось запарсить файл по пути %s: %w", filePath, err)
-	}
-
-	return transaction, nil
-
+	return transactions, nil
 }
 
-func (fs FileStorage) ensureDataDir() error {
-
-	filePath := filepath.Join(fs.dataDir, "transaction.json")
-
-	_, err := os.Stat(filePath)
-
+func (fs *FileStorage) writeTransactions(transactions []models.Transaction) error {
+	data, err := json.MarshalIndent(transactions, "", "  ")
 	if err != nil {
-		err = os.MkdirAll(filePath, 0755)
+		return err
 	}
-
-	return os.MkdirAll(fs.dataDir, fs.dirPerms)
+	return os.WriteFile(fs.transactionFile, data, 0644)
 }
 
-func (fs FileStorage) getFilePath(filename string) string {
+func (fs *FileStorage) readCategories() ([]models.Category, error) {
+	data, err := os.ReadFile(fs.categoryFile)
+	if err != nil {
+		return []models.Category{}, nil
+	}
 
-	return filepath.Join(fs.dataDir, filename)
+	var categories []models.Category
+	if err := json.Unmarshal(data, &categories); err != nil {
+		return []models.Category{}, nil
+	}
+	return categories, nil
+}
 
+func (fs *FileStorage) writeCategories(categories []models.Category) error {
+	data, err := json.MarshalIndent(categories, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(fs.categoryFile, data, 0644)
 }

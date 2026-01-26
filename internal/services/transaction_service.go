@@ -4,7 +4,6 @@ import (
 	"fintrack/internal/models"
 	"fintrack/internal/storage"
 	"fmt"
-	"math/rand"
 	"strconv"
 	"strings"
 	"time"
@@ -21,14 +20,15 @@ func NewTransactionService(storage storage.Storage) *TransactionService {
 }
 
 func generateUniqueID() string {
-	rand.Seed(time.Now().UnixNano())
-	newID := strconv.Itoa(rand.Intn(9000000) + 1000000)
+	t := time.Now()
+	models.Chet++
+	newID := t.Format("020106-") + strconv.FormatInt(models.Chet, 10)
 	return newID
 }
 
 func validateTransaction(transaction models.Transaction) error {
 	if transaction.Amount <= 0 {
-		return fmt.Errorf("сумма не может быть < 0")
+		return fmt.Errorf("сумма не может быть <= 0")
 	}
 
 	if transaction.Category == "" {
@@ -40,10 +40,44 @@ func validateTransaction(transaction models.Transaction) error {
 	}
 
 	return nil
-
 }
 
-func (ts TransactionService) AddTransaction(amount float64, category string, description string, transactionType string) error {
+func (ts *TransactionService) AddTransaction(amount float64, category string, description string, transactionType string) error {
+	if amount <= 0 {
+		return fmt.Errorf("сумма не может быть <= 0")
+	}
+
+	if strings.TrimSpace(category) == "" {
+		return fmt.Errorf("категория не может быть пустой")
+	}
+
+	if strings.TrimSpace(description) == "" {
+		return fmt.Errorf("описание не может быть пустым")
+	}
+
+	if transactionType != string(models.Expense) && transactionType != string(models.Income) {
+		return fmt.Errorf("неизвестный тип транзакции: %s", transactionType)
+	}
+
+	categories, err := ts.storage.GetCategories()
+	if err != nil {
+		return fmt.Errorf("ошибка получения категорий: %w", err)
+	}
+
+	categoryFound := false
+	for _, cat := range categories {
+		if strings.EqualFold(cat.Name, category) {
+			categoryFound = true
+			if string(cat.Type) != transactionType {
+				return fmt.Errorf("несоответствие типа категории")
+			}
+			break
+		}
+	}
+
+	if !categoryFound {
+		return fmt.Errorf("категория не найдена")
+	}
 
 	newTransaction := models.Transaction{
 		ID:          generateUniqueID(),
@@ -54,63 +88,17 @@ func (ts TransactionService) AddTransaction(amount float64, category string, des
 		Date:        time.Now(),
 	}
 
-	if amount <= 0 {
-		return fmt.Errorf("сумма не может быть < 0")
-	}
-
-	if strings.TrimSpace(category) == "" {
-		return fmt.Errorf("категория не может быть пустой")
-	}
-
-	if transactionType != string(models.Expense) || transactionType != string(models.Income) {
-		return fmt.Errorf("неизвестный тип транзакции: %s. Должен быть 'income' или 'expence'", transactionType)
-	}
-
-	categories, err := ts.storage.GetCategories()
-
-	if err != nil {
-		return fmt.Errorf("ошибка в получении категорий")
-	}
-
-	categoryFound := false
-	autoDeterminedType := ""
-
-	for _, cat := range categories {
-
-		if strings.EqualFold(cat.Title, category) {
-			categoryFound = true
-
-			if transactionType == "" {
-				autoDeterminedType = string(cat.Type)
-			} else {
-
-				if string(cat.Type) != transactionType {
-					return fmt.Errorf("несоответствие типа категории")
-				}
-			}
-			break
-
-		}
-
-	}
-
-	if !categoryFound {
-		return fmt.Errorf("категория не найдена")
-	}
-
-	if autoDeterminedType != "" {
-		newTransaction.Type = models.TransactionType(autoDeterminedType)
-	}
-
 	if err := validateTransaction(newTransaction); err != nil {
-		return fmt.Errorf("валидация транзакции не пройдена")
+		return err
 	}
 
-	err = ts.storage.SaveTransactions(newTransaction)
+	return ts.storage.SaveTransaction(newTransaction)
+}
+
+func (ts *TransactionService) GetAllTransactions() ([]models.Transaction, error) {
+	transactions, err := ts.storage.GetAllTransactions()
 	if err != nil {
-		return fmt.Errorf("не удалось сохранить тразакцию")
+		return nil, fmt.Errorf("не удалось получить транзакции: %w", err)
 	}
-
-	return nil
-
+	return transactions, nil
 }
