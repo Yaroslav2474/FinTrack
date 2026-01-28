@@ -4,7 +4,6 @@ import (
 	"fintrack/internal/models"
 	"fintrack/internal/storage"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -20,10 +19,8 @@ func NewTransactionService(storage storage.Storage) *TransactionService {
 }
 
 func generateUniqueID() string {
-	t := time.Now()
-	models.Chet++
-	newID := t.Format("020106-") + strconv.FormatInt(models.Chet, 10)
-	return newID
+	// Использование timestamp в нанасекундах для уникальности
+	return fmt.Sprintf("tx_%d", time.Now().UnixNano())
 }
 
 func validateTransaction(transaction models.Transaction) error {

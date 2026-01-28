@@ -17,5 +17,3 @@ type Transaction struct {
 	Type        TransactionType `json:"type"`
 	Date        time.Time       `json:"date"`
 }
-
-var Chet int64

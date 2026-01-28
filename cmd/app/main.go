@@ -8,19 +8,32 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/charmbracelet/lipgloss"
 )
 
 const (
-	ColorRest   = "\033[0m"
-	ColorRed    = "\033[31m"
-	ColorGreen  = "\033[32m"
-	ColorYellow = "\033[33m"
-	ColorBlue   = "\033[34m"
-	ColorCyan   = "\033[36m"
-	ColorWhite  = "\033[37m"
+	Rest   = ""
+	Red    = lipgloss.Color("#ff0000")
+	Green  = lipgloss.Color("#00ff0d")
+	Yellow = lipgloss.Color("#fffb00")
+	Blue   = lipgloss.Color("#0000FF")
+	Cyan   = lipgloss.Color("#3bdddd")
+	White  = lipgloss.Color("#FFFFFF")
+)
+
+var (
+	ColorRed    = lipgloss.NewStyle().Foreground(Red)
+	ColorGreen  = lipgloss.NewStyle().Foreground(Green)
+	ColorYellow = lipgloss.NewStyle().Foreground(Yellow)
+	ColorBlue   = lipgloss.NewStyle().Foreground(Blue)
+	ColorCyan   = lipgloss.NewStyle().Foreground(Cyan)
+	ColorWhite  = lipgloss.NewStyle().Foreground(White)
 )
 
 type App struct {
@@ -45,7 +58,7 @@ func NewApp() *App {
 	fmt.Println(inf)
 
 	if err != nil {
-		fmt.Printf(ColorYellow+"Предупреждение при загрузке категорий: %w"+ColorRest, err)
+		fmt.Printf("%s %s", ColorYellow.Render("Предупреждение при загрузке категорий: "), ColorYellow.Render(fmt.Sprintf("%v", err)))
 	}
 
 	scanner := bufio.NewScanner(os.Stdin)
@@ -60,24 +73,34 @@ func NewApp() *App {
 
 func clearScreen() {
 
+	if runtime.GOOS == "windows" {
+		cmd := exec.Command("cmd", "/c", "cls")
+		cmd.Stdout = os.Stdout
+		cmd.Run()
+	} else {
+		cmd := exec.Command("clear")
+		cmd.Stdout = os.Stdout
+		cmd.Run()
+	}
+
 }
 
 func (app *App) DisplayMainMenu() {
 	clearScreen()
 
-	fmt.Println(ColorBlue + "=====================FinTrack=====================" + ColorRest)
-	fmt.Println("1.Добавить транзакцию")
-	fmt.Println("2.Показать транзакции")
-	fmt.Println("3.Показать категории")
-	fmt.Println("0.Выход")
-	fmt.Println(ColorCyan + "==================================================" + ColorRest)
+	fmt.Printf("%s\n", ColorCyan.Render("=====================FinTrack====================="))
+	fmt.Printf("%s\n", ColorWhite.Render("1. Добавить транзакции"))
+	fmt.Printf("%s\n", ColorWhite.Render("2.Показать транзакции"))
+	fmt.Printf("%s\n", ColorWhite.Render("3.Показать категории"))
+	fmt.Printf("%s\n", ColorWhite.Render("0.Выход"))
+	fmt.Printf("%s\n", ColorCyan.Render("=================================================="))
 
 }
 
 func (app *App) addTransaction() error {
 	clearScreen()
-	fmt.Println(ColorCyan + "==============Добавление транзакции===============" + ColorRest)
-	fmt.Print(ColorCyan + "Введите сумму: " + ColorRest)
+	fmt.Println(ColorBlue.Render("==============Добавление транзакции==============="))
+	fmt.Print(ColorCyan.Render("Введите сумму: "))
 	if !app.scanner.Scan() {
 		return fmt.Errorf("ошибка чтения суммы")
 	}
@@ -93,7 +116,7 @@ func (app *App) addTransaction() error {
 		return fmt.Errorf("сумма должна быть положительной")
 	}
 
-	fmt.Print(ColorCyan + "Тип транзакции (1-доход 2-расход):" + ColorRest)
+	fmt.Print(ColorCyan.Render("\nТип транзакции (1-доход 2-расход):"))
 
 	if !app.scanner.Scan() {
 		return fmt.Errorf("ошибка чтения типа транзакции")
@@ -119,13 +142,13 @@ func (app *App) addTransaction() error {
 		return fmt.Errorf("нет доступных категорий для выбранного типа")
 	}
 
-	fmt.Println(ColorYellow + "Доступные категории: " + ColorRest)
+	fmt.Println(ColorCyan.Render("Доступные категории: "))
 
 	for i, category := range categories {
-		fmt.Printf("%d.%s\n", i+1, category.Name)
+		fmt.Printf("\n%d.%s\n", i+1, category.Name)
 	}
 
-	fmt.Print(ColorCyan + "Выберите категорию(номер): " + ColorRest)
+	fmt.Print(ColorCyan.Render("\nВыберите категорию(номер): "))
 
 	if !app.scanner.Scan() {
 		return fmt.Errorf("ошибка чтения категории")
@@ -139,7 +162,7 @@ func (app *App) addTransaction() error {
 
 	selectedCategory := categories[categoryindex-1].Name
 
-	fmt.Print(ColorCyan + "Введите описание: " + ColorRest)
+	fmt.Print(ColorCyan.Render("\nВведите описание: "))
 
 	if !app.scanner.Scan() {
 		return fmt.Errorf("ошибка чтения описания")
@@ -148,7 +171,7 @@ func (app *App) addTransaction() error {
 	descripyion := strings.TrimSpace(app.scanner.Text())
 
 	if descripyion == "" {
-		descripyion = "Без описания"
+		descripyion = "\nБез описания"
 	}
 
 	transactionType := "income"
@@ -174,7 +197,7 @@ func (app *App) addTransaction() error {
 		transactionTypeDisplay = "Доход"
 	}
 
-	fmt.Println(ColorGreen + "\n Транзакция успешно добавлена!" + ColorRest)
+	fmt.Println(ColorGreen.Render("\n Транзакция успешно добавлена!\n"))
 	fmt.Printf("ID: %s\nСумма: %.2f\nТип: %s\nКатегория: %s\nОписание: %s\nДата: %s\n",
 		transaction.ID,
 		transaction.Amount,
@@ -189,7 +212,7 @@ func (app *App) addTransaction() error {
 
 func (app *App) showTransactions() error {
 	clearScreen()
-	fmt.Println(ColorBlue + "==================== Транзакции ====================" + ColorRest)
+	fmt.Println(ColorBlue.Render("==================== Транзакции ===================="))
 
 	transactions, err := app.transactionService.GetAllTransactions()
 	if err != nil {
@@ -197,7 +220,7 @@ func (app *App) showTransactions() error {
 	}
 
 	if len(transactions) == 0 {
-		fmt.Println(ColorYellow + "Нет доступных транзакций для отображения." + ColorRest)
+		fmt.Println(ColorYellow.Render("Нет доступных транзакций для отображения."))
 		return nil
 	}
 
@@ -224,10 +247,9 @@ func (app *App) showTransactions() error {
 			displayID = t.ID[:7] + "..."
 		}
 
-		fmt.Printf("%-10s | %s%-12.2f%s | %-15s | %-20s | %s\n",
+		fmt.Printf("%-10s | %s%-12.2f | %-15s | %-20s | %s\n",
 			displayID,
-			amountColor, t.Amount, ColorRest,
-			t.Category,
+			amountColor, t.Amount, t.Category,
 			t.Date.Format("02.01.2006 15:04"),
 			transactionType)
 
@@ -236,14 +258,14 @@ func (app *App) showTransactions() error {
 	fmt.Println(strings.Repeat("-", 70))
 
 	balance := totalIncome - totalExpense
-	balanceColor := ColorGreen
+	balanceColor := lipgloss.NewStyle().Foreground(Green)
 	if balance < 0 {
-		balanceColor = ColorRed
+		balanceColor = lipgloss.NewStyle().Foreground(Red)
 	}
 
-	fmt.Printf(ColorCyan+"Итоговый доход: %s%.2f%s\n"+ColorRest, ColorGreen, totalIncome, ColorRest)
-	fmt.Printf(ColorCyan+"Итоговый расход: %s%.2f%s\n"+ColorRest, ColorRed, totalExpense, ColorRest)
-	fmt.Printf(ColorCyan+"Баланс: %s%.2f%s\n"+ColorRest, balanceColor, balance, ColorRest)
+	fmt.Printf("%s %s", ColorCyan.Render("\nИтоговый доход: "), ColorCyan.Render(fmt.Sprintf("%.2f", totalIncome)))
+	fmt.Printf("%s %s", ColorCyan.Render("\nИтоговый расход: "), ColorCyan.Render(fmt.Sprintf("%.2f", totalExpense)))
+	fmt.Printf("%s %s", balanceColor.Render("\nБаланс: "), ColorCyan.Render(fmt.Sprintf("%.2f", balance)))
 
 	return nil
 
@@ -253,7 +275,7 @@ func (app *App) showCategories() error {
 
 	clearScreen()
 
-	fmt.Println(ColorBlue + "==================== Категории ====================" + ColorRest)
+	fmt.Println(ColorBlue.Render("==================== Категории ===================="))
 
 	incomeCategories, err := app.categoryService.GetCategoriesByType(true)
 
@@ -261,10 +283,10 @@ func (app *App) showCategories() error {
 		return fmt.Errorf("ошибка загрузки категорий доходов: %v", err)
 	}
 
-	fmt.Println(ColorGreen + "\nДоходы:" + ColorRest)
+	fmt.Println(ColorCyan.Render("Доходы:"))
 
 	if len(incomeCategories) == 0 {
-		fmt.Println(ColorYellow + "Нет доступных категорий доходов." + ColorRest)
+		fmt.Println(ColorYellow.Render("Нет доступных категорий доходов."))
 	} else {
 		for _, categories := range incomeCategories {
 			fmt.Printf("  • %s — %s\n", categories.Name, categories.Type)
@@ -285,37 +307,33 @@ func init() {
 	transactionService := services.NewTransactionService(fs)
 	categoryService := services.NewCategoryService(fs)
 
-	// Добавляем категории
 	err := categoryService.AddCategory("Продукты", false)
 	if err != nil && err.Error() != "" {
-		log.Printf("Ошибка добавления категории: %v\n", err)
+		log.Printf("\nОшибка добавления категории: %v\n", err)
 	}
 
-	// Добавляем транзакцию
 	err = transactionService.AddTransaction(100.50, "Продукты", "Покупка в магазине", "expense")
 	if err != nil {
-		log.Printf("Ошибка добавления транзакции: %v\n", err)
+		log.Printf("\nОшибка добавления транзакции: %v\n", err)
 	}
 
-	// Получаем все транзакции
 	transactions, err := transactionService.GetAllTransactions()
 	if err != nil {
-		log.Fatalf("Ошибка получения транзакций: %v\n", err)
+		log.Fatalf("\nОшибка получения транзакций: %v\n", err)
 	}
 
-	fmt.Println("=== Все транзакции ===")
+	fmt.Println("\n=== Все транзакции ===\n")
 	for _, t := range transactions {
 		fmt.Printf("ID: %s, Сумма: %.2f, Категория: %s, Тип: %s, Дата: %s\n",
 			t.ID, t.Amount, t.Category, t.Type, t.Date.Format("02.01.2006 15:04"))
 	}
 
-	// Получаем категории по типу
 	categories, err := categoryService.GetCategoriesByType(false)
 	if err != nil {
 		log.Fatalf("Ошибка получения категорий: %v\n", err)
 	}
 
-	fmt.Println("\n=== Категории расходов ===")
+	fmt.Println("\n=== Категории расходов ===\n")
 	for _, c := range categories {
 		fmt.Printf("Название: %s, Тип: %s\n", c.Name, c.Type)
 	}
@@ -325,25 +343,25 @@ func main() {
 	app := NewApp()
 
 	if app == nil {
-		fmt.Println(ColorRed + "Ошибка при инициализации приложения." + ColorRest)
+		fmt.Println(ColorRed.Render("Ошибка при инициализации приложения."))
 		return
 	}
 
 	clearScreen()
-	fmt.Println(ColorGreen + "╔════════════════════════════════════════════════════════╗" + ColorRest)
-	fmt.Println(ColorGreen + "║           Добро пожаловать в FinTrack!                 ║" + ColorRest)
-	fmt.Println(ColorGreen + "║    Простой и надежный финансовый трекер на Go          ║" + ColorRest)
-	fmt.Println(ColorGreen + "╚════════════════════════════════════════════════════════╝" + ColorRest)
-	fmt.Print(ColorCyan + "\nНажмите Enter для начала работы..." + ColorRest)
+	fmt.Println(ColorGreen.Render("╔════════════════════════════════════════════════════════╗"))
+	fmt.Println(ColorGreen.Render("║           Добро пожаловать в FinTrack!                 ║"))
+	fmt.Println(ColorGreen.Render("║    Простой и надежный финансовый трекер на Go          ║"))
+	fmt.Println(ColorGreen.Render("╚════════════════════════════════════════════════════════╝"))
+	fmt.Print(ColorCyan.Render("\nНажмите Enter для начала работы..."))
 	app.scanner.Scan()
 
 	for {
 		app.DisplayMainMenu()
 
-		fmt.Print(ColorCyan + "Выберите опцию: " + ColorRest)
+		fmt.Print(ColorCyan.Render("\nВыберите опцию: "))
 
 		if !app.scanner.Scan() {
-			fmt.Println(ColorYellow + "\n\nОбнаружен сигнал завершения. Завершение работы..." + ColorRest)
+			fmt.Println(ColorYellow.Render("\n\nОбнаружен сигнал завершения. Завершение работы..."))
 			break
 		}
 
@@ -355,7 +373,7 @@ func main() {
 
 		choice, err := strconv.Atoi(choiceStr)
 		if err != nil {
-			fmt.Println(ColorRed + "Некорректный ввод. Пожалуйста, введите число." + ColorRest)
+			fmt.Println(ColorRed.Render("Некорректный ввод. Пожалуйста, введите число."))
 			continue
 		}
 
@@ -363,27 +381,28 @@ func main() {
 		case 1:
 			err := app.addTransaction()
 			if err != nil {
-				fmt.Println(ColorRed + "Ошибка при добавлении транзакции: " + err.Error() + ColorRest)
+				fmt.Println(ColorRed.Render("Ошибка при добавлении транзакции: " + err.Error()))
 			}
 		case 2:
 			err := app.showTransactions()
 			if err != nil {
-				fmt.Println(ColorRed + "Ошибка при отображении транзакций: " + err.Error() + ColorRest)
+				fmt.Println(ColorRed.Render("Ошибка при отображении транзакций: " + err.Error()))
 			}
 		case 3:
 			err := app.showCategories()
 			if err != nil {
-				fmt.Println(ColorRed + "Ошибка при отображении категорий: " + err.Error() + ColorRest)
+				fmt.Println(ColorRed.Render("Ошибка при отображении категорий: " + err.Error()))
 			}
 		case 0:
 			clearScreen()
-			fmt.Println(ColorGreen + "╔════════════════════════════════════════════════════════╗" + ColorRest)
-			fmt.Println(ColorGreen + "║        Спасибо за использование FinTrack!              ║" + ColorRest)
-			fmt.Println(ColorGreen + "║                До свидания!                            ║" + ColorRest)
-			fmt.Println(ColorGreen + "╚════════════════════════════════════════════════════════╝" + ColorRest)
+			fmt.Println(ColorGreen.Render("╔════════════════════════════════════════════════════════╗"))
+			fmt.Println(ColorGreen.Render("║        Спасибо за использование FinTrack!              ║"))
+			fmt.Println(ColorGreen.Render("║                До свидания!                            ║"))
+			fmt.Println(ColorGreen.Render("╚════════════════════════════════════════════════════════╝"))
+			time.NewTimer(3 * time.Second)
 			return
 		default:
-			fmt.Println(ColorRed + "\nНекорректный выбор. Пожалуйста, выберите опцию от 1 до 4." + ColorRest)
+			fmt.Println(ColorRed.Render("\nНекорректный выбор. Пожалуйста, выберите опцию от 1 до 4."))
 		}
 
 		waitForEnter(app.scanner)
@@ -393,6 +412,6 @@ func main() {
 }
 
 func waitForEnter(scanner *bufio.Scanner) {
-	fmt.Print(ColorWhite + "\nНажмите Enter для продолжения..." + ColorRest)
+	fmt.Print(ColorWhite.Render("\nНажмите Enter для продолжения..."))
 	scanner.Scan()
 }
