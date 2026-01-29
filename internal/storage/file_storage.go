@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fintrack/internal/models"
 	"os"
+	"path/filepath"
 	"sync"
 )
 
@@ -14,6 +15,32 @@ type FileStorage struct {
 }
 
 func NewFileStorage(transactionFile, categoryFile string) *FileStorage {
+	// ensure directory for transactionFile exists
+	if dir := filepath.Dir(transactionFile); dir != "" {
+		_ = os.MkdirAll(dir, 0755)
+	}
+	if dir := filepath.Dir(categoryFile); dir != "" {
+		_ = os.MkdirAll(dir, 0755)
+	}
+
+	// create transaction file if missing
+	if _, err := os.Stat(transactionFile); err != nil {
+		// write empty array
+		_ = os.WriteFile(transactionFile, []byte("[]\n"), 0644)
+	}
+
+	// create category file if missing — write default categories
+	if _, err := os.Stat(categoryFile); err != nil {
+		var all []models.Category
+		all = append(all, models.DefaultExpenseCategories...)
+		all = append(all, models.DefaultIncomeCategories...)
+		if data, err := json.MarshalIndent(all, "", "  "); err == nil {
+			_ = os.WriteFile(categoryFile, append(data, '\n'), 0644)
+		} else {
+			_ = os.WriteFile(categoryFile, []byte("[]\n"), 0644)
+		}
+	}
+
 	return &FileStorage{
 		transactionFile: transactionFile,
 		categoryFile:    categoryFile,
