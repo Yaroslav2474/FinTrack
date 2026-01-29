@@ -1,0 +1,72 @@
+[
+  {
+    "id": "1",
+    "name": "★Продукты",
+    "type": "expense",
+    "is_income": false,
+    "edit": false
+  },
+  {
+    "id": "2",
+    "name": "★Транспорт",
+    "type": "expense",
+    "is_income": false,
+    "edit": false
+  },
+  {
+    "id": "3",
+    "name": "★Жилье",
+    "type": "expense",
+    "is_income": false,
+    "edit": false
+  },
+  {
+    "id": "4",
+    "name": "★Развлечения",
+    "type": "expense",
+    "is_income": false,
+    "edit": false
+  },
+  {
+    "id": "5",
+    "name": "★Зарплата",
+    "type": "income",
+    "is_income": true,
+    "edit": false
+  },
+  {
+    "id": "6",
+    "name": "★Подарки",
+    "type": "income",
+    "is_income": true,
+    "edit": false
+  },
+  {
+    "id": "7",
+    "name": "★Прочие доходы",
+    "type": "income",
+    "is_income": true,
+    "edit": false
+  },
+  {
+    "id": "",
+    "name": "Продукты",
+    "type": "expense",
+    "is_income": false,
+    "edit": false
+  },
+  {
+    "id": "",
+    "name": "Продукты",
+    "type": "expense",
+    "is_income": false,
+    "edit": false
+  },
+  {
+    "id": "",
+    "name": "Продукты",
+    "type": "expense",
+    "is_income": false,
+    "edit": false
+  }
+]

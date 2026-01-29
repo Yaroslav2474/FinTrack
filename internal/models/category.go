@@ -12,7 +12,7 @@ type CategoryType string
 const (
 	Income   CategoryType = "income"
 	Expense  CategoryType = "expense"
-	Filename              = "./data/categories.json"
+	Filename              = "internal/data/categories.json"
 )
 
 type Category struct {
@@ -41,28 +41,33 @@ var (
 )
 
 func loadFromFile() {
+	// legacy function kept for compatibility — not used by GetDefaultCategories
+	// but left here in case of direct calls elsewhere.
 	file, err := os.Open(Filename)
 	if err != nil {
 		return
 	}
 	defer file.Close()
 
+	var cats []Category
 	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&DefaultExpenseCategories)
-	if err != nil {
-		fmt.Println("Ошибка загрузки данных, начнём заново.")
-		DefaultExpenseCategories = []Category{}
+	if err := decoder.Decode(&cats); err != nil {
+		return
 	}
-
-	decoder = json.NewDecoder(file)
-	err = decoder.Decode(&DefaultIncomeCategories)
-	if err != nil {
-		fmt.Println("Ошибка загрузки данных, начнём заново.")
-		DefaultIncomeCategories = []Category{}
+	// split into expense/income defaults if needed
+	DefaultExpenseCategories = []Category{}
+	DefaultIncomeCategories = []Category{}
+	for _, c := range cats {
+		if c.IsIncome {
+			DefaultIncomeCategories = append(DefaultIncomeCategories, c)
+		} else {
+			DefaultExpenseCategories = append(DefaultExpenseCategories, c)
+		}
 	}
 }
 
 func saveToFile() {
+	// Save combined categories as a single JSON array
 	file, err := os.Create(Filename)
 	if err != nil {
 		fmt.Println("Не могу сохранить файл.")
@@ -70,48 +75,37 @@ func saveToFile() {
 	}
 	defer file.Close()
 
-	encoder := json.NewEncoder(file)
-	err = encoder.Encode(DefaultExpenseCategories)
-	if err != nil {
-		fmt.Println("Ошибка при сохранении.")
-	}
+	var all []Category
+	all = append(all, DefaultExpenseCategories...)
+	all = append(all, DefaultIncomeCategories...)
 
-	encoder = json.NewEncoder(file)
-	err = encoder.Encode(DefaultIncomeCategories)
-	if err != nil {
+	encoder := json.NewEncoder(file)
+	if err := encoder.Encode(all); err != nil {
 		fmt.Println("Ошибка при сохранении.")
 	}
 }
 
 func GetDefaultCategories() ([]Category, error) {
 
-	fileInfo, err := os.ReadFile("./data/categories.json")
-
+	data, err := os.ReadFile(Filename)
 	if err != nil {
-		fmt.Printf("Возникла ошабка при инициализации базы данных\n%s", err)
+		// If the file doesn't exist or cannot be read, return default categories without error
+		var defaults []Category
+		defaults = append(defaults, DefaultExpenseCategories...)
+		defaults = append(defaults, DefaultIncomeCategories...)
+		return defaults, nil
 	}
 
-	if fileInfo == nil {
-		for _, v := range DefaultExpenseCategories {
-			fmt.Printf("ID: %s Название: %s  Тип транзакции: %s  Подлежит редактированию: %v\n", v.ID, v.Name, v.IsIncome, v.Edit)
-		}
-		for _, v := range DefaultIncomeCategories {
-			fmt.Printf("ID: %s Название: %s  Тип транзакции: %s  Подлежит редактированию: %v\n", v.ID, v.Name, v.IsIncome, v.Edit)
-		}
-
-	}
-	var inf []Category
-
-	if err := json.Unmarshal(fileInfo, &inf); err != nil {
-		fmt.Printf("Ошибка парсинга JSON: %v\n", err)
-		return nil, err
+	var cats []Category
+	if err := json.Unmarshal(data, &cats); err != nil {
+		// On parse error, return defaults
+		var defaults []Category
+		defaults = append(defaults, DefaultExpenseCategories...)
+		defaults = append(defaults, DefaultIncomeCategories...)
+		return defaults, nil
 	}
 
-	for _, v := range inf {
-		fmt.Printf("ID: %s Название: %s  Тип транзакции: %s  Подлежит редактированию: %v\n", v.ID, v.Name, v.IsIncome, v.Edit)
-	}
-
-	return inf, nil
+	return cats, nil
 }
 
 func FindCategoryByID(id string) (*Category, error) {

@@ -52,7 +52,7 @@ func (ts *TransactionService) AddTransaction(amount float64, category string, de
 		return fmt.Errorf("описание не может быть пустым")
 	}
 
-	if transactionType != string(models.Expense) && transactionType != string(models.Income) {
+	if transactionType != string(models.TransactionExpense) && transactionType != string(models.TransactionIncome) {
 		return fmt.Errorf("неизвестный тип транзакции: %s", transactionType)
 	}
 

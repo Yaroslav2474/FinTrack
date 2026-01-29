@@ -6,7 +6,6 @@ import (
 	"fintrack/internal/services"
 	"fintrack/internal/storage"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"runtime"
@@ -48,14 +47,13 @@ func generateUniqueID() string {
 }
 
 func NewApp() *App {
-	fileStorage := storage.NewFileStorage("data", "transactions")
+	// use concrete files under internal/data for transactions and categories
+	fileStorage := storage.NewFileStorage("internal/data/transactions.json", "internal/data/categories.json")
 
 	transactionService := services.NewTransactionService(fileStorage)
 	categoryService := services.NewCategoryService(fileStorage)
 
-	inf, err := models.GetDefaultCategories()
-
-	fmt.Println(inf)
+	_, err := models.GetDefaultCategories()
 
 	if err != nil {
 		fmt.Printf("%s %s", ColorYellow.Render("Предупреждение при загрузке категорий: "), ColorYellow.Render(fmt.Sprintf("%v", err)))
@@ -65,7 +63,7 @@ func NewApp() *App {
 
 	return &App{
 		transactionService: transactionService,
-		categoryService:    (*services.CategoryService)(categoryService),
+		categoryService:    categoryService,
 		scanner:            scanner,
 	}
 
@@ -179,14 +177,14 @@ func (app *App) addTransaction() error {
 		transactionType = "expense"
 	}
 
-	transaction := &models.Transaction{
-		ID:          generateUniqueID(),
-		Amount:      amount,
-		Category:    selectedCategory,
-		Description: descripyion,
-		Type:        models.TransactionType(transactionType),
-		Date:        time.Now(),
-	}
+	// transaction := &models.Transaction{
+	// 	ID:          generateUniqueID(),
+	// 	Amount:      amount,
+	// 	Category:    selectedCategory,
+	// 	Description: descripyion,
+	// 	Type:        models.TransactionType(transactionType),
+	// 	Date:        time.Now(),
+	// }
 
 	if err := app.transactionService.AddTransaction(amount, selectedCategory, descripyion, transactionType); err != nil {
 		return fmt.Errorf("ошибка при добавлении транзакции: %v", err)
@@ -199,12 +197,12 @@ func (app *App) addTransaction() error {
 
 	fmt.Println(ColorGreen.Render("\n Транзакция успешно добавлена!\n"))
 	fmt.Printf("ID: %s\nСумма: %.2f\nТип: %s\nКатегория: %s\nОписание: %s\nДата: %s\n",
-		transaction.ID,
-		transaction.Amount,
+		generateUniqueID(),
+		amount,
 		transactionTypeDisplay,
-		transaction.Category,
-		transaction.Description,
-		transaction.Date.Format("02.01.2006 15:04:05"),
+		selectedCategory,
+		descripyion,
+		time.Now().Format("02.01.2006 15:04:05"),
 	)
 
 	return nil
@@ -288,55 +286,29 @@ func (app *App) showCategories() error {
 	if len(incomeCategories) == 0 {
 		fmt.Println(ColorYellow.Render("Нет доступных категорий доходов."))
 	} else {
-		for _, categories := range incomeCategories {
-			fmt.Printf("  • %s — %s\n", categories.Name, categories.Type)
+		for _, category := range incomeCategories {
+			fmt.Printf("  • %s — %s\n", category.Name, category.Type)
 		}
+	}
 
+	expenseCategories, err := app.categoryService.GetCategoriesByType(false)
+
+	if err != nil {
+		return fmt.Errorf("ошибка загрузки категорий расходов: %v", err)
+	}
+
+	fmt.Println(ColorCyan.Render("\nРасходы:"))
+
+	if len(expenseCategories) == 0 {
+		fmt.Println(ColorYellow.Render("Нет доступных категорий расходов."))
+	} else {
+		for _, category := range expenseCategories {
+			fmt.Printf("  • %s — %s\n", category.Name, category.Type)
+		}
 	}
 
 	return nil
 
-}
-
-func init() {
-	fs := storage.NewFileStorage(
-		"internal/data/transactions.json",
-		"internal/data/categories.json",
-	)
-
-	transactionService := services.NewTransactionService(fs)
-	categoryService := services.NewCategoryService(fs)
-
-	err := categoryService.AddCategory("Продукты", false)
-	if err != nil && err.Error() != "" {
-		log.Printf("\nОшибка добавления категории: %v\n", err)
-	}
-
-	err = transactionService.AddTransaction(100.50, "Продукты", "Покупка в магазине", "expense")
-	if err != nil {
-		log.Printf("\nОшибка добавления транзакции: %v\n", err)
-	}
-
-	transactions, err := transactionService.GetAllTransactions()
-	if err != nil {
-		log.Fatalf("\nОшибка получения транзакций: %v\n", err)
-	}
-
-	fmt.Println("\n=== Все транзакции ===\n")
-	for _, t := range transactions {
-		fmt.Printf("ID: %s, Сумма: %.2f, Категория: %s, Тип: %s, Дата: %s\n",
-			t.ID, t.Amount, t.Category, t.Type, t.Date.Format("02.01.2006 15:04"))
-	}
-
-	categories, err := categoryService.GetCategoriesByType(false)
-	if err != nil {
-		log.Fatalf("Ошибка получения категорий: %v\n", err)
-	}
-
-	fmt.Println("\n=== Категории расходов ===\n")
-	for _, c := range categories {
-		fmt.Printf("Название: %s, Тип: %s\n", c.Name, c.Type)
-	}
 }
 
 func main() {
