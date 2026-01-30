@@ -25,16 +25,16 @@ type Category struct {
 
 var (
 	DefaultExpenseCategories = []Category{
-		{ID: "1", Name: "★Продукты", IsIncome: false, Type: "expense"},
-		{ID: "2", Name: "★Транспорт", IsIncome: false, Type: "expense"},
-		{ID: "3", Name: "★Жилье", IsIncome: false, Type: "expense"},
-		{ID: "4", Name: "★Развлечения", IsIncome: false, Type: "expense"},
+		{ID: "1", Name: "Продукты", IsIncome: false, Type: "expense"},
+		{ID: "2", Name: "Транспорт", IsIncome: false, Type: "expense"},
+		{ID: "3", Name: "Жилье", IsIncome: false, Type: "expense"},
+		{ID: "4", Name: "Развлечения", IsIncome: false, Type: "expense"},
 	}
 
 	DefaultIncomeCategories = []Category{
-		{ID: "5", Name: "★Зарплата", IsIncome: true, Type: "income"},
-		{ID: "6", Name: "★Подарки", IsIncome: true, Type: "income"},
-		{ID: "7", Name: "★Прочие доходы", IsIncome: true, Type: "income"},
+		{ID: "5", Name: "Зарплата", IsIncome: true, Type: "income"},
+		{ID: "6", Name: "Подарки", IsIncome: true, Type: "income"},
+		{ID: "7", Name: "Прочие доходы", IsIncome: true, Type: "income"},
 	}
 
 	AllCategories []Category

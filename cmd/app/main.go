@@ -177,15 +177,6 @@ func (app *App) addTransaction() error {
 		transactionType = "expense"
 	}
 
-	// transaction := &models.Transaction{
-	// 	ID:          generateUniqueID(),
-	// 	Amount:      amount,
-	// 	Category:    selectedCategory,
-	// 	Description: descripyion,
-	// 	Type:        models.TransactionType(transactionType),
-	// 	Date:        time.Now(),
-	// }
-
 	if err := app.transactionService.AddTransaction(amount, selectedCategory, descripyion, transactionType); err != nil {
 		return fmt.Errorf("ошибка при добавлении транзакции: %v", err)
 	}
@@ -230,10 +221,10 @@ func (app *App) showTransactions() error {
 	totalExpense := 0.0
 
 	for _, t := range transactions {
-		amountColor := ColorGreen
+
 		transactionType := "Доход"
 		if t.Type == "expense" {
-			amountColor = ColorRed
+
 			transactionType = "Расход"
 			totalExpense += t.Amount
 		} else {
@@ -245,11 +236,12 @@ func (app *App) showTransactions() error {
 			displayID = t.ID[:7] + "..."
 		}
 
-		fmt.Printf("%-10s | %s%-12.2f | %-15s | %-20s | %s\n",
+		fmt.Printf("%-10s | %-12.2f | %-15s | %s | %s |%-27s\n",
 			displayID,
-			amountColor, t.Amount, t.Category,
-			t.Date.Format("02.01.2006 15:04"),
-			transactionType)
+			t.Amount, t.Category,
+			transactionType,
+			t.Description,
+			t.Date.Format("02.01.2006 15:04"))
 
 	}
 
