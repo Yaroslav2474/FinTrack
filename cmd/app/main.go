@@ -214,7 +214,7 @@ func (app *App) showTransactions() error {
 	}
 
 	fmt.Println()
-	fmt.Printf("%-20s %-15s %-10s %-20s %-30s %-20s\n", "ID", "Сумма", "Тип", "Категория", "Описание", "Дата")
+	fmt.Printf("%-20s %-15s %-10s %-20s %-30s %-20s\n", "ID", "Сумма", "Тип", "Категория", "Дата", "Описание")
 	fmt.Println(strings.Repeat("-", 70))
 
 	totalIncome := 0.0
@@ -240,8 +240,8 @@ func (app *App) showTransactions() error {
 			displayID,
 			t.Amount, t.Category,
 			transactionType,
-			t.Description,
-			t.Date.Format("02.01.2006 15:04"))
+			t.Date.Format("02.01.2006 15:04"),
+			t.Description)
 
 	}
 
